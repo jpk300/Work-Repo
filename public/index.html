@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lunch Signup</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Lunch Signup</h1>
+        <p>Select a lunch and sign up. Each lunch is limited to 6 people.</p>
+      </header>
+
+      <main>
+        <section id="lunches" class="grid"></section>
+
+        <section class="admin">
+          <details>
+            <summary>View signups (share this only with people who should see it)</summary>
+            <div class="admin-controls">
+              <label>
+                Lunch
+                <select id="adminLunch"></select>
+              </label>
+              <button id="refreshAdmin" type="button">Refresh</button>
+            </div>
+            <pre id="adminOutput" class="admin-output"></pre>
+          </details>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <small>Hosted internally. Data is stored in a local SQLite database on the server.</small>
+      </footer>
+    </div>
+
+    <dialog id="signupDialog" class="dialog">
+      <form id="signupForm" method="dialog" class="form">
+        <div class="form-header">
+          <h2 id="dialogTitle">Sign up</h2>
+          <button type="button" id="closeDialog" class="link">Close</button>
+        </div>
+
+        <input type="hidden" id="lunchId" name="lunchId" />
+
+        <label>
+          Name
+          <input id="name" name="name" autocomplete="name" required />
+        </label>
+
+        <label>
+          Email
+          <input id="email" name="email" type="email" autocomplete="email" required />
+        </label>
+
+        <label>
+          Team
+          <input id="team" name="team" required />
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" id="submitBtn">Submit</button>
+        </div>
+
+        <p id="formMessage" class="message" role="status"></p>
+      </form>
+    </dialog>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
