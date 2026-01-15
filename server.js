@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const { initDb } = require('./db');
+const crypto = require('crypto');
 
 const CAPACITY_PER_LUNCH = 6;
 
@@ -8,7 +9,7 @@ const LUNCHES = [
   {
     id: 'lunch-1',
     title: 'Lunch - St. Charles',
-    starts_at: '2026-03-20T11:30:00-06:00',
+    starts_at: '2026-01-01T11:30:00-06:00',
     location: 'Tucanos',
     address: '1520 S 5th St, Saint Charles, MO 63303'
   },
@@ -66,6 +67,11 @@ function isPastLunch(startsAtIso) {
   return t < Date.now();
 }
 
+function createLunchId() {
+  if (typeof crypto.randomUUID === 'function') return `lunch-${crypto.randomUUID()}`;
+  return `lunch-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 app.get('/api/lunches', (req, res) => {
   const lunches = db
     .prepare(
@@ -104,6 +110,59 @@ app.get('/api/lunches', (req, res) => {
       };
     })
   );
+});
+
+app.post('/api/lunches', (req, res) => {
+  const { title, starts_at, location, address } = req.body ?? {};
+
+  if (!isNonEmptyString(title) || !isNonEmptyString(starts_at) || !isNonEmptyString(location)) {
+    return res.status(400).json({ error: 'title, starts_at, and location are required' });
+  }
+
+  const startsAtMs = new Date(starts_at).getTime();
+  if (Number.isNaN(startsAtMs)) {
+    return res.status(400).json({ error: 'starts_at must be a valid date/time' });
+  }
+
+  const lunch = {
+    id: createLunchId(),
+    title: title.trim(),
+    starts_at: new Date(startsAtMs).toISOString(),
+    location: location.trim(),
+    address: isNonEmptyString(address) ? address.trim() : ''
+  };
+
+  try {
+    db.prepare(
+      `INSERT INTO lunches (id, title, starts_at, location, address)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(lunch.id, lunch.title, lunch.starts_at, lunch.location, lunch.address);
+
+    return res.status(201).json({ ok: true, lunch });
+  } catch {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
+});
+
+app.delete('/api/lunches/:lunchId', (req, res) => {
+  const { lunchId } = req.params;
+
+  const existing = db
+    .prepare('SELECT id, title, starts_at, location, address FROM lunches WHERE id = ?')
+    .get(lunchId);
+
+  if (!existing) return res.status(404).json({ error: 'Lunch not found' });
+
+  try {
+    const out = db.transaction(() => {
+      db.prepare('DELETE FROM lunches WHERE id = ?').run(lunchId);
+      return { ok: true };
+    })();
+
+    return res.json(out);
+  } catch {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
 });
 
 app.get('/api/lunches/:lunchId/signups', (req, res) => {

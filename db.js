@@ -11,6 +11,7 @@ function initDb({ dbFilePath, lunches }) {
   const db = new Database(dbFilePath);
 
   db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS lunches (

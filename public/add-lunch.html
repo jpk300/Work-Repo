@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Lunch</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Add Lunch</h1>
+        <p><a class="link" href="/">Back to lunch signups</a></p>
+      </header>
+
+      <main>
+        <section class="manage">
+          <div class="manage-title">Add Lunch</div>
+          <form id="addLunchForm" class="manage-controls">
+            <label>
+              Title
+              <input id="newLunchTitle" required />
+            </label>
+            <label>
+              Date &amp; time
+              <input id="newLunchStartsAt" type="datetime-local" required />
+            </label>
+            <label>
+              Location
+              <input id="newLunchLocation" required />
+            </label>
+            <label>
+              Address
+              <input id="newLunchAddress" />
+            </label>
+            <button id="addLunchBtn" type="submit">Add</button>
+          </form>
+          <p id="addLunchMessage" class="message" role="status"></p>
+        </section>
+
+        <section class="manage">
+          <div class="manage-title">Current Lunches</div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Address</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="lunchListBody"></tbody>
+            </table>
+            <div id="lunchListEmpty" class="admin-empty" hidden>No lunches found.</div>
+          </div>
+          <p id="lunchListMessage" class="message" role="status"></p>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <small>Hosted internally. Data is stored in a local SQLite database on the server.</small>
+      </footer>
+    </div>
+
+    <script src="/add-lunch.js"></script>
+  </body>
+</html>

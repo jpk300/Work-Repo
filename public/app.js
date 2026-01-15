@@ -90,6 +90,13 @@ function renderLunches(lunches) {
     const badges = document.createElement('div');
     badges.className = 'badges';
 
+    if (lunch.is_past) {
+      const pastBadge = document.createElement('span');
+      pastBadge.className = 'badge past';
+      pastBadge.textContent = 'Date Past';
+      badges.appendChild(pastBadge);
+    }
+
     const remainingBadge = document.createElement('span');
     remainingBadge.className = `badge ${lunch.remaining > 0 ? 'ok' : 'full'}`;
     remainingBadge.textContent = `${lunch.remaining} / ${lunch.capacity} spots left`;
@@ -116,12 +123,10 @@ function renderLunches(lunches) {
     progressBar.style.width = `${pct}%`;
     progress.appendChild(progressBar);
 
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    if (lunch.is_past) {
-      btn.textContent = 'Closed';
-      btn.disabled = true;
-    } else {
+    let btn = null;
+    if (!lunch.is_past) {
+      btn = document.createElement('button');
+      btn.className = 'btn';
       btn.textContent = lunch.remaining > 0 ? 'Sign up' : 'Join waitlist';
       btn.addEventListener('click', () => openSignup(lunch));
     }
@@ -130,7 +135,7 @@ function renderLunches(lunches) {
     card.appendChild(meta);
     card.appendChild(badges);
     card.appendChild(progress);
-    card.appendChild(btn);
+    if (btn) card.appendChild(btn);
 
     lunchesEl.appendChild(card);
   }
