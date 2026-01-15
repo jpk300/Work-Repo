@@ -3,31 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lunch Signup</title>
+    <title>Infrastrcuture Engnieering - Lunch with Jason</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="container">
       <header class="header">
-        <h1>Lunch Signup</h1>
-        <p>Select a lunch and sign up. Each lunch is limited to 6 people.</p>
+        <h1>Infrastrcuture Engnieering - Lunch with Jason</h1>
+        <p>Select a lunch location and date that works best for you. Currently limiting to 6 people, but could expand depending on demand.</p>
       </header>
 
       <main>
         <section id="lunches" class="grid"></section>
 
         <section class="admin">
-          <details>
-            <summary>View signups (share this only with people who should see it)</summary>
-            <div class="admin-controls">
-              <label>
-                Lunch
-                <select id="adminLunch"></select>
-              </label>
-              <button id="refreshAdmin" type="button">Refresh</button>
+          <div class="admin-title">View Sign-Ups</div>
+          <div class="admin-controls">
+            <label>
+              Select the date you'd like to see the current signup list for
+              <select id="adminLunch"></select>
+            </label>
+            <button id="refreshAdmin" type="button">Refresh</button>
+          </div>
+          <div id="adminPanel" class="admin-panel">
+            <div class="admin-summary">
+              <div class="admin-summary-title" id="adminLunchTitle"></div>
+              <div class="admin-summary-meta" id="adminLunchMeta"></div>
+              <div class="admin-summary-badges">
+                <span id="adminSpotsBadge" class="badge"></span>
+              </div>
+              <div class="progress" aria-hidden="true">
+                <div id="adminProgressBar" class="progress-bar"></div>
+              </div>
             </div>
-            <pre id="adminOutput" class="admin-output"></pre>
-          </details>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Team</th>
+                    <th>Status</th>
+                    <th>Signed up</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+              </table>
+              <div id="adminEmpty" class="admin-empty" hidden>No signups yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="cancel">
+          <div class="cancel-title">Cancel Sign-Up</div>
+          <div class="cancel-controls">
+            <label>
+              Lunch
+              <select id="cancelLunch"></select>
+            </label>
+            <label>
+              Email
+              <input id="cancelEmail" type="email" autocomplete="email" required />
+            </label>
+            <button id="cancelBtn" type="button">Cancel</button>
+          </div>
+          <p id="cancelMessage" class="message" role="status"></p>
         </section>
       </main>
 
@@ -57,7 +98,16 @@
 
         <label>
           Team
-          <input id="team" name="team" required />
+          <select id="team" name="team" required>
+            <option value="" selected disabled>Select a team</option>
+            <option>Business Infrastructure Services</option>
+            <option>Data Center &amp; Facilities</option>
+            <option>Identity &amp; Access Management</option>
+            <option>IT Service Management</option>
+            <option>Infrastructure Services</option>
+            <option>Network Services</option>
+            <option>Observability Engineering</option>
+          </select>
         </label>
 
         <div class="form-actions">

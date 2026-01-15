@@ -17,7 +17,8 @@ function initDb({ dbFilePath, lunches }) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       starts_at TEXT NOT NULL,
-      location TEXT NOT NULL
+      location TEXT NOT NULL,
+      address TEXT NOT NULL DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS signups (
@@ -26,19 +27,40 @@ function initDb({ dbFilePath, lunches }) {
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       team TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'confirmed',
+      cancelled_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (lunch_id) REFERENCES lunches(id) ON DELETE CASCADE,
       UNIQUE (lunch_id, email)
     );
   `);
 
+  const lunchColumns = db.prepare(`PRAGMA table_info(lunches)`).all();
+  const hasAddress = lunchColumns.some((c) => c && c.name === 'address');
+  if (!hasAddress) {
+    db.exec(`ALTER TABLE lunches ADD COLUMN address TEXT NOT NULL DEFAULT ''`);
+  }
+
+  const signupColumns = db.prepare(`PRAGMA table_info(signups)`).all();
+  const hasStatus = signupColumns.some((c) => c && c.name === 'status');
+  if (!hasStatus) {
+    db.exec(`ALTER TABLE signups ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed'`);
+    db.exec(`UPDATE signups SET status = 'confirmed' WHERE status IS NULL OR status = ''`);
+  }
+
+  const hasCancelledAt = signupColumns.some((c) => c && c.name === 'cancelled_at');
+  if (!hasCancelledAt) {
+    db.exec(`ALTER TABLE signups ADD COLUMN cancelled_at TEXT`);
+  }
+
   const upsertLunch = db.prepare(
-    `INSERT INTO lunches (id, title, starts_at, location)
-     VALUES (@id, @title, @starts_at, @location)
+    `INSERT INTO lunches (id, title, starts_at, location, address)
+     VALUES (@id, @title, @starts_at, @location, @address)
      ON CONFLICT(id) DO UPDATE SET
        title=excluded.title,
        starts_at=excluded.starts_at,
-       location=excluded.location`
+       location=excluded.location,
+       address=excluded.address`
   );
 
   const tx = db.transaction(() => {
