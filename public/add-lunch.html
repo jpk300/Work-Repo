@@ -7,16 +7,28 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-title">
+          <div class="topbar-title-main">Infrastructure Engineering</div>
+          <div class="topbar-title-sub">Lunch with Jason</div>
+        </div>
+        <div class="topbar-right">
+          <img class="topbar-logo" src="/wwt-logo.png" alt="World Wide Technology" />
+          <a class="topbar-action" href="/">Back</a>
+        </div>
+      </div>
+    </div>
     <div class="container">
       <header class="header">
         <h1>Add Lunch</h1>
-        <p><a class="link" href="/">Back to lunch signups</a></p>
       </header>
 
       <main>
         <section class="manage">
           <div class="manage-title">Add Lunch</div>
           <form id="addLunchForm" class="manage-controls">
+            <input id="editLunchId" type="hidden" />
             <label>
               Title
               <input id="newLunchTitle" required />
@@ -34,6 +46,7 @@
               <input id="newLunchAddress" />
             </label>
             <button id="addLunchBtn" type="submit">Add</button>
+            <button id="cancelEditBtn" type="button" class="mini-btn" hidden>Cancel edit</button>
           </form>
           <p id="addLunchMessage" class="message" role="status"></p>
         </section>
@@ -48,6 +61,7 @@
                   <th>Date</th>
                   <th>Location</th>
                   <th>Address</th>
+                  <th>Status</th>
                   <th></th>
                 </tr>
               </thead>

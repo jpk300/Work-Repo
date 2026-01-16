@@ -19,7 +19,8 @@ function initDb({ dbFilePath, lunches }) {
       title TEXT NOT NULL,
       starts_at TEXT NOT NULL,
       location TEXT NOT NULL,
-      address TEXT NOT NULL DEFAULT ''
+      address TEXT NOT NULL DEFAULT '',
+      deleted_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS signups (
@@ -40,6 +41,11 @@ function initDb({ dbFilePath, lunches }) {
   const hasAddress = lunchColumns.some((c) => c && c.name === 'address');
   if (!hasAddress) {
     db.exec(`ALTER TABLE lunches ADD COLUMN address TEXT NOT NULL DEFAULT ''`);
+  }
+
+  const hasDeletedAt = lunchColumns.some((c) => c && c.name === 'deleted_at');
+  if (!hasDeletedAt) {
+    db.exec(`ALTER TABLE lunches ADD COLUMN deleted_at TEXT`);
   }
 
   const signupColumns = db.prepare(`PRAGMA table_info(signups)`).all();

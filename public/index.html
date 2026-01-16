@@ -7,23 +7,43 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-title">
+          <div class="topbar-title-main">Infrastructure Engineering</div>
+          <div class="topbar-title-sub">Lunch with Jason</div>
+        </div>
+        <div class="topbar-right">
+          <img class="topbar-logo" src="/wwt-logo.png" alt="World Wide Technology" />
+          <a class="topbar-action" href="/add-lunch.html">Settings</a>
+        </div>
+      </div>
+    </div>
     <div class="container">
       <header class="header">
-        <h1>Infrastructure Engineering - Lunch with Jason</h1>
         <p>Select a lunch location and date that works best for you. Currently limiting to 6 people, but could expand depending on demand.</p>
       </header>
 
       <main>
+        <section class="section-head">
+          <div class="section-title">Upcoming lunches</div>
+          <div class="section-subtitle">Pick a date and reserve a seat. If it’s full, you can join the waitlist.</div>
+        </section>
         <section id="lunches" class="grid"></section>
 
-        <section class="admin">
-          <div class="admin-title">View Sign-Ups</div>
+        <section class="admin panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Guest list</div>
+              <div class="panel-subtitle">For organizers: view who’s confirmed and who’s waitlisted.</div>
+            </div>
+          </div>
           <div class="admin-controls">
             <label>
-              Select the date you'd like to see the current signup list for
+              Lunch
               <select id="adminLunch"></select>
             </label>
-            <button id="refreshAdmin" type="button">Refresh</button>
+            <button id="refreshAdmin" type="button">Update list</button>
           </div>
           <div id="adminPanel" class="admin-panel">
             <div class="admin-summary">
@@ -31,6 +51,9 @@
               <div class="admin-summary-meta" id="adminLunchMeta"></div>
               <div class="admin-summary-badges">
                 <span id="adminSpotsBadge" class="badge"></span>
+                <span id="adminConfirmedBadge" class="badge"></span>
+                <span id="adminWaitlistBadge" class="badge"></span>
+                <span id="adminCancelledBadge" class="badge"></span>
               </div>
               <div class="progress" aria-hidden="true">
                 <div id="adminProgressBar" class="progress-bar"></div>
@@ -50,13 +73,18 @@
                 </thead>
                 <tbody id="adminTableBody"></tbody>
               </table>
-              <div id="adminEmpty" class="admin-empty" hidden>No signups yet.</div>
+              <div id="adminEmpty" class="admin-empty" hidden>No reservations yet. Share this lunch date with the team to get it started.</div>
             </div>
           </div>
         </section>
 
-        <section class="cancel">
-          <div class="cancel-title">Cancel Sign-Up</div>
+        <section class="cancel panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Manage reservation</div>
+              <div class="panel-subtitle">Need to cancel? Use the same email you reserved with.</div>
+            </div>
+          </div>
           <div class="cancel-controls">
             <label>
               Lunch
@@ -66,7 +94,7 @@
               Email
               <input id="cancelEmail" type="email" autocomplete="email" required />
             </label>
-            <button id="cancelBtn" type="button">Cancel</button>
+            <button id="cancelBtn" type="button">Cancel reservation</button>
           </div>
           <p id="cancelMessage" class="message" role="status"></p>
         </section>
@@ -74,14 +102,13 @@
 
       <footer class="footer">
         <small>Hosted internally. Data is stored in a local SQLite database on the server.</small>
-        <div class="footer-admin-link"><a class="link" href="/add-lunch.html">Add a lunch (admin)</a></div>
       </footer>
     </div>
 
     <dialog id="signupDialog" class="dialog">
       <form id="signupForm" method="dialog" class="form">
         <div class="form-header">
-          <h2 id="dialogTitle">Sign up</h2>
+          <h2 id="dialogTitle">Reserve your seat</h2>
           <button type="button" id="closeDialog" class="link">Close</button>
         </div>
 
@@ -111,8 +138,10 @@
           </select>
         </label>
 
+        <div class="form-note">WWT email required. You’ll see “Confirmed” or “Waitlisted” after reserving.</div>
+
         <div class="form-actions">
-          <button type="submit" id="submitBtn">Submit</button>
+          <button type="submit" id="submitBtn">Reserve</button>
         </div>
 
         <p id="formMessage" class="message" role="status"></p>

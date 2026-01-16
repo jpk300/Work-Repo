@@ -15,6 +15,9 @@ const refreshAdmin = document.getElementById('refreshAdmin');
 const adminLunchTitle = document.getElementById('adminLunchTitle');
 const adminLunchMeta = document.getElementById('adminLunchMeta');
 const adminSpotsBadge = document.getElementById('adminSpotsBadge');
+const adminConfirmedBadge = document.getElementById('adminConfirmedBadge');
+const adminWaitlistBadge = document.getElementById('adminWaitlistBadge');
+const adminCancelledBadge = document.getElementById('adminCancelledBadge');
 const adminProgressBar = document.getElementById('adminProgressBar');
 const adminTableBody = document.getElementById('adminTableBody');
 const adminEmpty = document.getElementById('adminEmpty');
@@ -64,7 +67,7 @@ function isAllowedEmail(email) {
 
 function openSignup(lunch) {
   if (lunch && lunch.is_past) return;
-  dialogTitle.textContent = `Sign up: ${lunch.title}`;
+  dialogTitle.textContent = `Reserve: ${lunch.title}`;
   lunchIdInput.value = lunch.id;
   setMessage('');
   signupForm.reset();
@@ -77,7 +80,7 @@ function renderLunches(lunches) {
 
   for (const lunch of lunches) {
     const card = document.createElement('div');
-    card.className = 'card';
+    card.className = lunch.is_past ? 'card past-card' : 'card';
 
     const title = document.createElement('h3');
     title.textContent = lunch.title;
@@ -99,7 +102,7 @@ function renderLunches(lunches) {
 
     const remainingBadge = document.createElement('span');
     remainingBadge.className = `badge ${lunch.remaining > 0 ? 'ok' : 'full'}`;
-    remainingBadge.textContent = `${lunch.remaining} / ${lunch.capacity} spots left`;
+    remainingBadge.textContent = `${lunch.remaining} / ${lunch.capacity} available`;
 
     const usedBadge = document.createElement('span');
     usedBadge.className = 'badge';
@@ -127,7 +130,7 @@ function renderLunches(lunches) {
     if (!lunch.is_past) {
       btn = document.createElement('button');
       btn.className = 'btn';
-      btn.textContent = lunch.remaining > 0 ? 'Sign up' : 'Join waitlist';
+      btn.textContent = lunch.remaining > 0 ? 'Reserve a seat' : 'Join waitlist';
       btn.addEventListener('click', () => openSignup(lunch));
     }
 
@@ -182,6 +185,9 @@ async function refreshAdminView() {
   adminLunchTitle.textContent = 'Loading...';
   adminLunchMeta.textContent = '';
   adminSpotsBadge.textContent = '';
+  if (adminConfirmedBadge) adminConfirmedBadge.textContent = '';
+  if (adminWaitlistBadge) adminWaitlistBadge.textContent = '';
+  if (adminCancelledBadge) adminCancelledBadge.textContent = '';
   if (adminProgressBar) adminProgressBar.style.width = '0%';
   adminTableBody.innerHTML = '';
   adminEmpty.hidden = true;
@@ -198,18 +204,33 @@ async function refreshAdminView() {
   const lunch = data.lunch;
   const signups = Array.isArray(data.signups) ? data.signups : [];
   const capacity = Number(data.capacity || 0);
-  const used = signups.filter((s) => s && s.status === 'confirmed').length;
-  const remaining = Math.max(0, capacity - used);
+  const confirmedCount = signups.filter((s) => s && s.status === 'confirmed').length;
+  const waitlistCount = signups.filter((s) => s && s.status === 'waitlist').length;
+  const cancelledCount = signups.filter((s) => s && s.status === 'cancelled').length;
+  const remaining = Math.max(0, capacity - confirmedCount);
 
   adminLunchTitle.textContent = lunch.title;
   const addressLine = lunch.address && String(lunch.address).trim().length > 0 ? ` • ${lunch.address}` : '';
   adminLunchMeta.textContent = `${formatStartsAt(lunch.starts_at)} • ${lunch.location}${addressLine}`;
 
   adminSpotsBadge.className = `badge ${remaining > 0 ? 'ok' : 'full'}`;
-  adminSpotsBadge.textContent = `${used} / ${capacity} filled (${remaining} left)`;
+  adminSpotsBadge.textContent = `${confirmedCount} / ${capacity} filled (${remaining} left)`;
+
+  if (adminConfirmedBadge) {
+    adminConfirmedBadge.className = 'badge ok';
+    adminConfirmedBadge.textContent = `${confirmedCount} confirmed`;
+  }
+  if (adminWaitlistBadge) {
+    adminWaitlistBadge.className = 'badge';
+    adminWaitlistBadge.textContent = `${waitlistCount} waitlisted`;
+  }
+  if (adminCancelledBadge) {
+    adminCancelledBadge.className = 'badge';
+    adminCancelledBadge.textContent = `${cancelledCount} cancelled`;
+  }
 
   if (adminProgressBar) {
-    const pct = capacity > 0 ? Math.max(0, Math.min(100, (used / capacity) * 100)) : 0;
+    const pct = capacity > 0 ? Math.max(0, Math.min(100, (confirmedCount / capacity) * 100)) : 0;
     adminProgressBar.style.width = `${pct}%`;
   }
 
@@ -234,16 +255,20 @@ async function refreshAdminView() {
     teamTd.textContent = s.team;
 
     const statusTd = document.createElement('td');
-    let normalizedStatus;
+    const chip = document.createElement('span');
+    chip.className = 'status-chip';
     if (s.status === 'waitlist') {
       waitlistIndex += 1;
-      normalizedStatus = `Waitlist (#${waitlistIndex})`;
+      chip.classList.add('waitlist');
+      chip.textContent = `Waitlisted (#${waitlistIndex})`;
     } else if (s.status === 'cancelled') {
-      normalizedStatus = 'Cancelled';
+      chip.classList.add('cancelled');
+      chip.textContent = 'Cancelled';
     } else {
-      normalizedStatus = 'Confirmed';
+      chip.classList.add('confirmed');
+      chip.textContent = 'Confirmed';
     }
-    statusTd.textContent = normalizedStatus;
+    statusTd.appendChild(chip);
 
     const createdTd = document.createElement('td');
     createdTd.textContent = formatSignedUpAt(s.created_at);

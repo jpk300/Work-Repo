@@ -72,11 +72,21 @@ function createLunchId() {
   return `lunch-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function parseStartsAtOrNull(startsAt) {
+  if (!isNonEmptyString(startsAt)) return null;
+  const ms = new Date(startsAt).getTime();
+  if (Number.isNaN(ms)) return null;
+  return ms;
+}
+
 app.get('/api/lunches', (req, res) => {
+  const includeDeleted = String(req.query.include_deleted || '') === '1';
+
   const lunches = db
     .prepare(
-      `SELECT id, title, starts_at, location, address
+      `SELECT id, title, starts_at, location, address, deleted_at
        FROM lunches
+       ${includeDeleted ? '' : "WHERE deleted_at IS NULL"}
        ORDER BY starts_at ASC`
     )
     .all();
@@ -119,15 +129,15 @@ app.post('/api/lunches', (req, res) => {
     return res.status(400).json({ error: 'title, starts_at, and location are required' });
   }
 
-  const startsAtMs = new Date(starts_at).getTime();
-  if (Number.isNaN(startsAtMs)) {
+  const startsAtMs = parseStartsAtOrNull(starts_at);
+  if (startsAtMs === null) {
     return res.status(400).json({ error: 'starts_at must be a valid date/time' });
   }
 
   const lunch = {
     id: createLunchId(),
     title: title.trim(),
-    starts_at: new Date(startsAtMs).toISOString(),
+    starts_at: starts_at.trim(),
     location: location.trim(),
     address: isNonEmptyString(address) ? address.trim() : ''
   };
@@ -148,18 +158,74 @@ app.delete('/api/lunches/:lunchId', (req, res) => {
   const { lunchId } = req.params;
 
   const existing = db
-    .prepare('SELECT id, title, starts_at, location, address FROM lunches WHERE id = ?')
+    .prepare('SELECT id, title, starts_at, location, address, deleted_at FROM lunches WHERE id = ?')
+    .get(lunchId);
+
+  if (!existing) return res.status(404).json({ error: 'Lunch not found' });
+
+  if (existing.deleted_at) return res.json({ ok: true });
+
+  try {
+    db.prepare(`UPDATE lunches SET deleted_at = datetime('now') WHERE id = ?`).run(lunchId);
+    return res.json({ ok: true });
+  } catch {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
+});
+
+app.post('/api/lunches/:lunchId/restore', (req, res) => {
+  const { lunchId } = req.params;
+
+  const existing = db
+    .prepare('SELECT id FROM lunches WHERE id = ?')
     .get(lunchId);
 
   if (!existing) return res.status(404).json({ error: 'Lunch not found' });
 
   try {
-    const out = db.transaction(() => {
-      db.prepare('DELETE FROM lunches WHERE id = ?').run(lunchId);
-      return { ok: true };
-    })();
+    db.prepare(`UPDATE lunches SET deleted_at = NULL WHERE id = ?`).run(lunchId);
+    return res.json({ ok: true });
+  } catch {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
+});
 
-    return res.json(out);
+app.put('/api/lunches/:lunchId', (req, res) => {
+  const { lunchId } = req.params;
+  const { title, starts_at, location, address } = req.body ?? {};
+
+  if (!isNonEmptyString(title) || !isNonEmptyString(starts_at) || !isNonEmptyString(location)) {
+    return res.status(400).json({ error: 'title, starts_at, and location are required' });
+  }
+
+  const startsAtMs = parseStartsAtOrNull(starts_at);
+  if (startsAtMs === null) {
+    return res.status(400).json({ error: 'starts_at must be a valid date/time' });
+  }
+
+  const existing = db
+    .prepare('SELECT id, deleted_at FROM lunches WHERE id = ?')
+    .get(lunchId);
+
+  if (!existing) return res.status(404).json({ error: 'Lunch not found' });
+  if (existing.deleted_at) return res.status(409).json({ error: 'This lunch is deleted. Restore it before editing.' });
+
+  const updated = {
+    id: lunchId,
+    title: title.trim(),
+    starts_at: starts_at.trim(),
+    location: location.trim(),
+    address: isNonEmptyString(address) ? address.trim() : ''
+  };
+
+  try {
+    db.prepare(
+      `UPDATE lunches
+       SET title = ?, starts_at = ?, location = ?, address = ?
+       WHERE id = ?`
+    ).run(updated.title, updated.starts_at, updated.location, updated.address, lunchId);
+
+    return res.json({ ok: true, lunch: updated });
   } catch {
     return res.status(500).json({ error: 'Unexpected error' });
   }
@@ -168,10 +234,14 @@ app.delete('/api/lunches/:lunchId', (req, res) => {
 app.get('/api/lunches/:lunchId/signups', (req, res) => {
   const { lunchId } = req.params;
   const lunch = db
-    .prepare('SELECT id, title, starts_at, location, address FROM lunches WHERE id = ?')
+    .prepare('SELECT id, title, starts_at, location, address, deleted_at FROM lunches WHERE id = ?')
     .get(lunchId);
 
   if (!lunch) return res.status(404).json({ error: 'Lunch not found' });
+
+  if (lunch.deleted_at) {
+    return res.status(404).json({ error: 'Lunch not found' });
+  }
 
   const signups = db
     .prepare(
@@ -202,8 +272,12 @@ app.post('/api/lunches/:lunchId/signup', (req, res) => {
     return res.status(400).json({ error: 'Please enter a valid email address' });
   }
 
-  const lunch = db.prepare('SELECT id, title, starts_at FROM lunches WHERE id = ?').get(lunchId);
+  const lunch = db.prepare('SELECT id, title, starts_at, deleted_at FROM lunches WHERE id = ?').get(lunchId);
   if (!lunch) return res.status(404).json({ error: 'Lunch not found' });
+
+  if (lunch.deleted_at) {
+    return res.status(409).json({ error: 'This lunch has been removed' });
+  }
 
   if (isPastLunch(lunch.starts_at)) {
     return res.status(409).json({ error: 'This lunch is in the past and is no longer accepting sign-ups' });
@@ -305,8 +379,12 @@ app.post('/api/lunches/:lunchId/cancel', (req, res) => {
     return res.status(400).json({ error: 'Please enter a valid email address' });
   }
 
-  const lunch = db.prepare('SELECT id, starts_at FROM lunches WHERE id = ?').get(lunchId);
+  const lunch = db.prepare('SELECT id, starts_at, deleted_at FROM lunches WHERE id = ?').get(lunchId);
   if (!lunch) return res.status(404).json({ error: 'Lunch not found' });
+
+  if (lunch.deleted_at) {
+    return res.status(409).json({ error: 'This lunch has been removed' });
+  }
 
   if (isPastLunch(lunch.starts_at)) {
     return res.status(409).json({ error: 'This lunch is in the past and can no longer be changed' });
